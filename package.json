@@ -1,0 +1,41 @@
+{
+  "name": "solguard-agent-pay",
+  "version": "1.0.0",
+  "description": "SolGuard AgentPay — Autonomous Solana Milestone Escrow, SPL Token Guardrails & x402 Agent Settlement Protocol",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx --test tests/solguard.test.ts",
+    "demo": "tsx src/cli/demo.ts",
+    "dashboard": "tsx src/server/dashboard.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LBCron/solguard-agent-pay.git"
+  },
+  "keywords": [
+    "solana",
+    "anchor",
+    "x402",
+    "usdg",
+    "usdc",
+    "agentic-payments",
+    "escrow",
+    "session-keys",
+    "superteam-uk",
+    "breakpoint"
+  ],
+  "author": "Ronan Chen Lopes <ronanchenlopes@gmail.com> (@LBCron)",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "bs58": "^6.0.0",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,27 @@
+[toolchain]
+anchor_version = "0.30.1"
+solana_version = "1.18.18"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+solguard_agent_pay = "SGPay11111111111111111111111111111111111111"
+
+[programs.devnet]
+solguard_agent_pay = "SGPay11111111111111111111111111111111111111"
+
+[programs.mainnet]
+solguard_agent_pay = "SGPay11111111111111111111111111111111111111"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "npm test"
+demo = "npm run demo"

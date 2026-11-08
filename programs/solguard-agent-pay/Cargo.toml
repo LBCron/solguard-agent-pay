@@ -1,0 +1,21 @@
+[package]
+name = "solguard-agent-pay"
+version = "0.1.0"
+description = "Autonomous Solana Milestone Escrow, SPL Token Guardrails & x402 Agent Settlement Protocol"
+edition = "2021"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "solguard_agent_pay"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.30.1"
+anchor-spl = "0.30.1"
