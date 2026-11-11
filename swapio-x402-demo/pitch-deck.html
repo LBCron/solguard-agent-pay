@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en" data-type="software">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="page-type" content="software" />
+  <meta name="site-kind" content="software" />
+  <title>BountySweep x402 — Swap.io Agent API + SolGuard Walkthrough</title>
+  <style>
+    :root {
+      --bg-canvas: #0a0c10;
+      --bg-surface: #11151c;
+      --bg-elevated: #171c26;
+      --text-primary: #f3f5f8;
+      --text-secondary: #9ba3b0;
+      --text-muted: #646e7d;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      --accent-emerald: #10b981;
+      --accent-emerald-dim: rgba(16, 185, 129, 0.12);
+      --accent-amber: #f59e0b;
+      --accent-amber-dim: rgba(245, 158, 11, 0.12);
+      --accent-crimson: #ef4444;
+      --accent-crimson-dim: rgba(239, 68, 68, 0.12);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .stage {
+      width: 100%;
+      min-height: 100vh;
+      max-width: 1920px;
+      margin: 0 auto;
+      padding: 40px 80px 104px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      background:
+        radial-gradient(900px 420px at 85% 8%, rgba(16, 185, 129, 0.06), transparent 70%),
+        radial-gradient(700px 380px at 12% 92%, rgba(245, 158, 11, 0.045), transparent 70%),
+        var(--bg-canvas);
+    }
+
+    /* Top Bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--accent-emerald);
+      letter-spacing: -0.03em;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .brand-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-left: 8px;
+    }
+
+    .scene-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scene-btn {
+      appearance: none;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 160ms var(--ease-out), border-color 160ms var(--ease-out), color 160ms var(--ease-out), background 160ms var(--ease-out);
+    }
+
+    .scene-btn:hover {
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    .scene-btn:active {
+      transform: scale(0.98);
+    }
+
+    .scene-btn:focus-visible {
+      outline: 2px solid var(--accent-emerald);
+      outline-offset: 2px;
+    }
+
+    .scene-btn.active {
+      background: var(--accent-emerald-dim);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: var(--accent-emerald);
+      font-weight: 600;
+    }
+
+    /* Main Content Area */
+    .scenes-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 32px 0;
+      position: relative;
+    }
+
+    .scene {
+      display: none;
+      width: 100%;
+      gap: 48px;
+    }
+
+    .scene.active {
+      display: grid;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-emerald);
+      margin-bottom: 16px;
+    }
+
+    .eyebrow.amber {
+      color: var(--accent-amber);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    h1, h2 {
+      font-size: 54px;
+      line-height: 1.08;
+      letter-spacing: -0.032em;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+    }
+
+    .lead {
+      font-size: 21px;
+      line-height: 1.58;
+      color: var(--text-secondary);
+      max-width: 58ch;
+    }
+
+    .lead strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Scene 1: Concrete Scenario */
+    .scene-1-grid {
+      grid-template-columns: 1.15fr 1fr;
+      align-items: center;
+    }
+
+    .payout-feed {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .payout-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      font-variant-numeric: tabular-nums;
+      transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out), border-color 240ms var(--ease-out);
+    }
+
+    .payout-row.highlight {
+      border-color: rgba(16, 185, 129, 0.45);
+    }
+
+    .token-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .payout-meta-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .payout-meta-sub {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .payout-amount {
+      text-align: right;
+    }
+
+    .payout-amount-val {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+    }
+
+    .payout-amount-status {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-amber);
+      margin-top: 4px;
+    }
+
+    /* Scene 2: Why x402 Beats API Keys & Subscriptions */
+    .scene-2-grid {
+      grid-template-columns: 1fr 1.25fr;
+      align-items: center;
+    }
+
+    .compare-table {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .cost-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .cost-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .cost-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .cost-number {
+      font-family: var(--font-mono);
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .bar-track {
+      height: 16px;
+      background: var(--bg-elevated);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .bar-fill-bad {
+      height: 100%;
+      width: 100%;
+      background: rgba(239, 68, 68, 0.72);
+      transform-origin: left;
+      transition: transform 400ms var(--ease-out);
+    }
+
+    .bar-fill-good {
+      height: 100%;
+      width: 1.5%;
+      min-width: 10px;
+      background: var(--accent-emerald);
+    }
+
+    .spec-rows {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1.1fr;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 16px;
+      row-gap: 14px;
+      column-gap: 16px;
+      font-size: 15px;
+      align-items: center;
+    }
+
+    .spec-head {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .pill-bad {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: #f87171;
+    }
+
+    .pill-good {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-emerald);
+    }
+
+    /* Scene 3: 4-Step x402 Protocol Sequence */
+    .scene-3-grid {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    .scene-3-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .step-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: border-color 220ms var(--ease-out), transform 220ms var(--ease-out), background 220ms var(--ease-out);
+    }
+
+    .step-card.lit {
+      background: var(--bg-elevated);
+      border-color: rgba(16, 185, 129, 0.55);
+      transform: translateY(-4px);
+    }
+
+    .step-card.lit.amber-lit {
+      border-color: rgba(245, 158, 11, 0.65);
+    }
+
+    .step-num {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .http-tag {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    .http-tag.tag-402 {
+      background: var(--accent-amber-dim);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: var(--accent-amber);
+    }
+
+    .http-tag.tag-200 {
+      background: var(--accent-emerald-dim);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: var(--accent-emerald);
+    }
+
+    .step-title {
+      font-size: 21px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .step-desc {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+    }
+
+    .step-code {
+      margin-top: auto;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Scene 4: Live Working Code + Terminal Execution */
+    .scene-4-grid {
+      grid-template-columns: 0.95fr 1.25fr;
+      gap: 32px;
+      align-items: stretch;
+    }
+
+    .code-pane, .term-pane {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .code-block {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      line-height: 1.62;
+      color: #d7dce5;
+      flex: 1;
+      white-space: pre-wrap;
+    }
+
+    .kw { color: #f59e0b; }
+    .str { color: #10b981; }
+    .cmt { color: #646e7d; }
+
+    .term-lines {
+      background: #07090d;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      line-height: 1.62;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .t-line {
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+    }
+
+    .t-line.shown {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .t-dim { color: var(--text-muted); }
+    .t-amber { color: var(--accent-amber); font-weight: 600; }
+    .t-green { color: var(--accent-emerald); font-weight: 600; }
+    .t-red { color: #f87171; font-weight: 600; }
+
+    /* Scene 5: Summary & Open-Source Repo CTA */
+    .scene-5-grid {
+      grid-template-columns: 1.15fr 1fr;
+      align-items: center;
+    }
+
+    .cta-stack {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .link-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      border-radius: 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .link-row-label {
+      font-size: 13px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .link-row-url {
+      font-family: var(--font-mono);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .badge-verified {
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--accent-emerald-dim);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--accent-emerald);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Kinetic Caption & Progress Footer */
+    .caption-dock {
+      position: fixed;
+      left: 80px;
+      right: 80px;
+      bottom: 24px;
+      max-width: 1760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .caption-pill {
+      align-self: center;
+      background: rgba(17, 21, 28, 0.92);
+      border: 1px solid var(--border-strong);
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text-primary);
+      text-align: center;
+      max-width: 1280px;
+      line-height: 1.4;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .progress-rail {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-emerald);
+    }
+
+    @media (max-width: 1100px) {
+      .stage { padding: 24px 24px 96px; }
+      .scene-1-grid, .scene-2-grid, .scene-4-grid, .scene-5-grid { grid-template-columns: 1fr; }
+      .steps-row { grid-template-columns: 1fr 1fr; }
+      h1, h2 { font-size: 36px; }
+      .caption-dock { left: 24px; right: 24px; }
+    }
+
+    body.video-capture *,
+    body.video-capture *::before,
+    body.video-capture *::after {
+      transition: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">402</div>
+        <div>
+          <span class="brand-title">BountySweep x402</span>
+          <span class="brand-sub">hermes.swap.io · SolGuard AgentPay · @LBCron</span>
+        </div>
+      </div>
+      <nav class="scene-nav" aria-label="Pitch walkthrough scenes">
+        <button class="scene-btn active" onclick="setScene(0)">01 · Scenario</button>
+        <button class="scene-btn" onclick="setScene(1)">02 · Why x402</button>
+        <button class="scene-btn" onclick="setScene(2)">03 · 4-Step Flow</button>
+        <button class="scene-btn" onclick="setScene(3)">04 · Live Demo</button>
+        <button class="scene-btn" onclick="setScene(4)">05 · Build Now</button>
+      </nav>
+    </header>
+
+    <main class="scenes-viewport">
+      <!-- SCENE 1 -->
+      <section class="scene scene-1-grid active" id="scene-0">
+        <div>
+          <div class="eyebrow"><span class="dot"></span> Concrete Agent Use Case</div>
+          <h1>Autonomous Bounty Payouts, Swept to USDC Instantly.</h1>
+          <p class="lead">
+            Open-source contributors and Superteam hunters win irregular payouts in volatile SPL tokens like
+            <strong>25,000,000 BONK</strong> or <strong>180 JUP</strong> at 3 AM.
+            <strong>BountySweep</strong> detects incoming payouts and converts them to <strong>USDC</strong> via
+            <strong>Swap.io's x402 Agent API</strong> before market volatility hits.
+          </p>
+        </div>
+        <div class="payout-feed">
+          <div class="panel-header">
+            <span>TREASURY WATCHER · 32647Bri...pq5yM</span>
+            <span style="color: var(--accent-emerald);">● LIVE WATCH</span>
+          </div>
+          <div class="payout-row highlight" id="s1-row-1">
+            <div class="token-badge">BONK</div>
+            <div>
+              <div class="payout-meta-title">GitHub PR Bounty #418 Merged</div>
+              <div class="payout-meta-sub">Mint: DezXAZ8z...pPB263 · Slippage Cap: 50 bps</div>
+            </div>
+            <div class="payout-amount">
+              <div class="payout-amount-val">+25,000,000 BONK</div>
+              <div class="payout-amount-status">→ Auto-Sweep via x402 ($0.003)</div>
+            </div>
+          </div>
+          <div class="payout-row" id="s1-row-2">
+            <div class="token-badge">JUP</div>
+            <div>
+              <div class="payout-meta-title">Superteam Micro-Grant Milestone</div>
+              <div class="payout-meta-sub">Mint: JUPyiwrY...sDvCN · Slippage Cap: 50 bps</div>
+            </div>
+            <div class="payout-amount">
+              <div class="payout-amount-val">+180.00 JUP</div>
+              <div class="payout-amount-status">→ Auto-Sweep via x402 ($0.003)</div>
+            </div>
+          </div>
+          <div class="payout-row" id="s1-row-3">
+            <div class="token-badge">USDC</div>
+            <div>
+              <div class="payout-meta-title">SolGuard Protected Vault Settlement</div>
+              <div class="payout-meta-sub">Mint: EPjFWdd5...TDt1v · Guardrail: $0.05/tx Cap</div>
+            </div>
+            <div class="payout-amount">
+              <div class="payout-amount-val" style="color: var(--text-primary);">100% Settled</div>
+              <div class="payout-amount-status" style="color: var(--accent-emerald);">0 API Keys · 0 SOL Gas</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCENE 2 -->
+      <section class="scene scene-2-grid" id="scene-1">
+        <div>
+          <div class="eyebrow amber"><span class="dot"></span> Why x402 Beats Subscriptions</div>
+          <h2>Stop Paying $588/Year for 40 Swaps.</h2>
+          <p class="lead">
+            A freelance treasury bot only runs when you get paid—maybe <strong>40 times a year</strong>.
+            Monthly DEX API plans burn <strong>$49/month</strong> in idle overhead, while static API keys leak inside CI runners.
+            <strong>Swap.io x402</strong> charges <strong>$0.003 USDC</strong> per request—saving <strong>99.96%</strong>.
+          </p>
+        </div>
+        <div class="compare-table">
+          <div class="cost-bars">
+            <div>
+              <div class="cost-item-top">
+                <span class="cost-label">Traditional DEX API Subscription ($49/mo × 12)</span>
+                <span class="cost-number" style="color: #f87171;">$588.00 / yr</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill-bad"></div></div>
+            </div>
+            <div>
+              <div class="cost-item-top">
+                <span class="cost-label" style="color: var(--text-primary);">Swap.io Agent API via x402 (40 sweeps × $0.006)</span>
+                <span class="cost-number" style="color: var(--accent-emerald);">$0.24 / yr</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill-good"></div></div>
+            </div>
+          </div>
+          <div class="spec-rows">
+            <div class="spec-head">Dimension</div>
+            <div class="spec-head">SaaS API Keys</div>
+            <div class="spec-head">Swap.io x402</div>
+
+            <div>Credentials in CI</div>
+            <div class="pill-bad">Static Key Leak Risk</div>
+            <div class="pill-good">Zero API Keys</div>
+
+            <div>Idle Months Cost</div>
+            <div class="pill-bad">$49.00 / month</div>
+            <div class="pill-good">$0.00 / month</div>
+
+            <div>API Payment Gas</div>
+            <div class="pill-bad">Card / Account Billing</div>
+            <div class="pill-good">0 SOL (Gasless Facilitator)</div>
+
+            <div>Blast Radius</div>
+            <div class="pill-bad">Full Quota Drain</div>
+            <div class="pill-good">SolGuard $0.05/tx Cap</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCENE 3 -->
+      <section class="scene scene-3-grid" id="scene-2">
+        <div class="scene-3-header">
+          <div>
+            <div class="eyebrow"><span class="dot"></span> Protocol Walkthrough</div>
+            <h2 style="margin-bottom: 8px;">How the Swap.io x402 Handshake Works</h2>
+            <p class="lead" style="max-width: 72ch;">Four deterministic HTTP steps—no signup portal, no OAuth, and zero SOL required for the API call.</p>
+          </div>
+        </div>
+        <div class="steps-row">
+          <div class="step-card lit" id="step-0">
+            <div class="step-num"><span>STEP 01</span><span class="http-tag">POST /v1/swap/quote</span></div>
+            <div class="step-title">Request Unpaid Quote</div>
+            <div class="step-desc">BountySweep posts the token pair (25M BONK → USDC, 50 bps slippage) with zero auth headers.</div>
+            <div class="step-code">POST hermes.swap.io/v1/swap/quote
+{"chainKey":"sol","slippageBps":50}</div>
+          </div>
+          <div class="step-card" id="step-1">
+            <div class="step-num"><span>STEP 02</span><span class="http-tag tag-402">HTTP 402</span></div>
+            <div class="step-title">Read Exact Price</div>
+            <div class="step-desc">Swap.io returns 3,007 atomic USDC ($0.003) + a gasless facilitator feePayer address.</div>
+            <div class="step-code">"maxAmountRequired": "3007",
+"payTo": "BPz2u6...EibMfD",
+"feePayer": "2wKupL...xHDBg4"</div>
+          </div>
+          <div class="step-card" id="step-2">
+            <div class="step-num"><span>STEP 03</span><span class="http-tag">X-PAYMENT</span></div>
+            <div class="step-title">Guardrail & Sign</div>
+            <div class="step-desc">SolGuard verifies amount ≤ $0.05 cap & allowlisted merchant, then partially signs the v0 USDC transfer.</div>
+            <div class="step-code">PolicyEngine: ALLOWED ($0.003007)
+X-PAYMENT: eyJ4NDAyVmVyc2lvbiI...</div>
+          </div>
+          <div class="step-card" id="step-3">
+            <div class="step-num"><span>STEP 04</span><span class="http-tag tag-200">HTTP 200 OK</span></div>
+            <div class="step-title">Quotes + Build Tx</div>
+            <div class="step-desc">Swap.io settles on Solana, returns X-PAYMENT-RESPONSE Solscan tx + ranked Jupiter/DFlow/OKX routes.</div>
+            <div class="step-code">quotes[0].providerQuote
+→ POST /v1/swap/build-tx</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCENE 4 -->
+      <section class="scene scene-4-grid" id="scene-3">
+        <div class="code-pane">
+          <div class="panel-header">
+            <span>swapio-x402-demo/auto-sweeper.ts</span>
+            <span>TypeScript · @solana/web3.js</span>
+          </div>
+          <div class="code-block"><span class="cmt">// 1. Unpaid request -> live HTTP 402 challenge</span>
+<span class="kw">const</span> res402 = <span class="kw">await</span> fetch(<span class="str">"https://hermes.swap.io/v1/swap/quote"</span>, {
+  method: <span class="str">"POST"</span>, body: JSON.stringify(bonkToUsdcPayload)
+});
+<span class="kw">const</span> { accepts } = <span class="kw">await</span> res402.json();
+<span class="kw">const</span> solOpt = accepts.find(a =&gt; a.network === <span class="str">"solana"</span>);
+
+<span class="cmt">// 2. Enforce SolGuard $0.05/tx cap + Swap.io allowlist</span>
+<span class="kw">const</span> verdict = PolicyEngine.recordSettlement(vault, {
+  signer: agentKeypair.publicKey,
+  recipient: <span class="kw">new</span> PublicKey(solOpt.payTo),
+  amount: BigInt(solOpt.maxAmountRequired), <span class="cmt">// 3007 ($0.003)</span>
+});
+
+<span class="cmt">// 3. Gasless v0 TransferChecked (feePayer = Swap.io facilitator)</span>
+<span class="kw">const</span> { xPaymentHeaderBase64 } = buildX402SolanaPaymentHeader({
+  payerKeypair: agentKeypair, accept: solOpt, recentBlockhash
+});
+<span class="kw">const</span> paid = <span class="kw">await</span> fetch(<span class="str">"https://hermes.swap.io/v1/swap/quote"</span>, {
+  method: <span class="str">"POST"</span>, headers: { <span class="str">"X-PAYMENT"</span>: xPaymentHeaderBase64 },
+  body: JSON.stringify(bonkToUsdcPayload)
+});</div>
+        </div>
+
+        <div class="term-pane">
+          <div class="panel-header">
+            <span>LIVE EXECUTION TRACE · npm run demo:swapio</span>
+            <span style="color: var(--accent-emerald);">8/8 TESTS PASSING</span>
+          </div>
+          <div class="term-lines" id="term-box">
+            <div class="t-line shown">$ npm run demo:swapio</div>
+            <div class="t-line shown t-dim">[1/5] Treasury: 32647Bri8KhJQE11x26iF7fpae9nouCJSZ8Y2VPpq5yM (@LBCron)</div>
+            <div class="t-line" id="tl-1">[2/5] GET https://hermes.swap.io/v1/info → <span class="t-green">HTTP 200 OK (12 x402 endpoints)</span></div>
+            <div class="t-line" id="tl-2">[3/5] POST https://hermes.swap.io/v1/swap/quote (+25,000,000 BONK → USDC)</div>
+            <div class="t-line t-amber" id="tl-3">  ← HTTP 402 Payment Required | x402Version: 1 | scheme: "exact"</div>
+            <div class="t-line" id="tl-4">     maxAmountRequired : 3007 atomic USDC ($0.003007)</div>
+            <div class="t-line" id="tl-5">     payTo (Swap.io)   : BPz2u6eoWLervxEqfpsMCVmKk7h6fEVsd7L5rvEibMfD</div>
+            <div class="t-line" id="tl-6">     extra.feePayer    : 2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4 (0 SOL!)</div>
+            <div class="t-line t-red" id="tl-7">[4/5] Adversarial $25.00 Spoof → BLOCKED: EXCEEDS_PER_TX_CAP (max $0.05)</div>
+            <div class="t-line t-green" id="tl-8">[4/5] Swap.io $0.003007 Quote  → ALLOWED (24h budget left: 0.996993 USDC)</div>
+            <div class="t-line" id="tl-9">[5/5] Signed v0 TransferChecked (ATA → 89jtoCob...PRjKP) + X-PAYMENT sent</div>
+            <div class="t-line t-green" id="tl-10">  ✓ Live SVM Facilitator Decoded v0 Tx | Annual Cost: $0.24/yr vs $588/yr</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCENE 5 -->
+      <section class="scene scene-5-grid" id="scene-4">
+        <div>
+          <div class="eyebrow"><span class="dot"></span> Open-Source & Ready Today</div>
+          <h2>Pay Per Quote. Zero Keys. Guarded On-Chain.</h2>
+          <p class="lead">
+            <strong>Swap.io's x402 Agent API</strong> turns multi-DEX aggregation, limit orders, DCA, and batch transfers into native HTTP micropayments on Solana—while <strong>SolGuard</strong> enforces deterministic treasury caps.
+          </p>
+        </div>
+        <div class="cta-stack">
+          <div class="link-row">
+            <div>
+              <div class="link-row-label">Swap.io Agent API (x402)</div>
+              <div class="link-row-url">https://hermes.swap.io</div>
+            </div>
+            <span class="badge-verified">$0.003 / CALL</span>
+          </div>
+          <div class="link-row">
+            <div>
+              <div class="link-row-label">Swap Platform & Docs</div>
+              <div class="link-row-url">https://swap.io</div>
+            </div>
+            <span class="badge-verified">ZERO API KEYS</span>
+          </div>
+          <div class="link-row">
+            <div>
+              <div class="link-row-label">Open-Source Working Demo (@LBCron)</div>
+              <div class="link-row-url">github.com/LBCron/solguard-agent-pay</div>
+            </div>
+            <span class="badge-verified">MIT LICENSE</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="caption-dock">
+      <div class="caption-pill" id="caption-text">
+        BountySweep x402: Autonomous Solana bounty payouts swept to USDC via Swap.io Agent API.
+      </div>
+      <div class="progress-rail">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const scenes = [0, 1, 2, 3, 4];
+    const defaultCaptions = [
+      "Meet BountySweep: an autonomous Solana treasury agent that sweeps BONK & JUP payouts into USDC.",
+      "Why pay $588/yr for a monthly DEX API plan when 40 swaps on Swap.io x402 cost $0.24/yr with zero API keys?",
+      "4-Step Flow: Unpaid POST → HTTP 402 ($0.003 USDC, gasless feePayer) → SolGuard Cap Check → Ranked DEX Quotes.",
+      "Live TypeScript Execution: hermes.swap.io HTTP 402 challenge + SolGuard $0.05 cap + Solana v0 X-PAYMENT.",
+      "Zero API keys. Zero idle subscriptions. Build with hermes.swap.io and SolGuard AgentPay on Solana."
+    ];
+
+    function setScene(idx) {
+      scenes.forEach((i) => {
+        document.getElementById(`scene-${i}`).classList.toggle("active", i === idx);
+      });
+      document.querySelectorAll(".scene-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i === idx);
+      });
+      document.getElementById("caption-text").textContent = defaultCaptions[idx];
+      document.getElementById("progress-bar").style.width = `${((idx + 1) / 5) * 100}%`;
+      if (idx === 2) {
+        [0, 1, 2, 3].forEach((s) => {
+          const el = document.getElementById(`step-${s}`);
+          el.classList.add("lit");
+          if (s === 1) el.classList.add("amber-lit");
+        });
+      }
+      if (idx === 3) {
+        for (let k = 1; k <= 10; k++) {
+          document.getElementById(`tl-${k}`).classList.add("shown");
+        }
+      }
+    }
+
+    window.addEventListener("keydown", (e) => {
+      const current = scenes.findIndex((i) => document.getElementById(`scene-${i}`).classList.contains("active"));
+      if (e.key === "ArrowRight" && current < 4) setScene(current + 1);
+      if (e.key === "ArrowLeft" && current > 0) setScene(current - 1);
+    });
+
+    // Deterministic frame-accurate controller for 1080p video rendering
+    window.__setVideoFrame = function(currentTimeSec, totalDurationSec, sceneIdx, localProgress, captionLine) {
+      scenes.forEach((i) => {
+        document.getElementById(`scene-${i}`).classList.toggle("active", i === sceneIdx);
+      });
+      document.querySelectorAll(".scene-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i === sceneIdx);
+      });
+
+      if (captionLine) {
+        document.getElementById("caption-text").textContent = captionLine;
+      }
+      const pct = Math.min(100, Math.max(0, (currentTimeSec / totalDurationSec) * 100));
+      document.getElementById("progress-bar").style.width = `${pct.toFixed(2)}%`;
+
+      // Scene 1 row highlight progression
+      if (sceneIdx === 0) {
+        const activeRow = localProgress < 0.45 ? 1 : (localProgress < 0.78 ? 2 : 3);
+        [1, 2, 3].forEach((r) => {
+          document.getElementById(`s1-row-${r}`).classList.toggle("highlight", r === activeRow);
+        });
+      }
+
+      // Scene 3 4-step progressive illumination
+      if (sceneIdx === 2) {
+        const activeStep = Math.min(3, Math.floor(localProgress * 4.2));
+        [0, 1, 2, 3].forEach((s) => {
+          const el = document.getElementById(`step-${s}`);
+          const on = s <= activeStep;
+          el.classList.toggle("lit", on);
+          el.classList.toggle("amber-lit", on && s === 1);
+        });
+      }
+
+      // Scene 4 progressive terminal lines
+      if (sceneIdx === 3) {
+        const linesToShow = Math.min(10, Math.floor(localProgress * 12) + 1);
+        for (let k = 1; k <= 10; k++) {
+          document.getElementById(`tl-${k}`).classList.toggle("shown", k <= linesToShow);
+        }
+      }
+    };
+  </script>
+</body>
+</html>

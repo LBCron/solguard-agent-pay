@@ -1,0 +1,47 @@
+{
+  "capturedAtUtc": "2026-11-09T20:26:31.386Z",
+  "ownerTreasury": "32647Bri8KhJQE11x26iF7fpae9nouCJSZ8Y2VPpq5yM",
+  "agentSessionPubkey": "3muD2uZe96QLavC6WnnyBuzQ9Kxn2qjApr2zXoMHWGrf",
+  "vaultPda": "8z1RA31XMMnfkQxkhGdysnHNHumhLnu9PAXSkNLzejh2",
+  "hermesEndpoint": "https://hermes.swap.io/v1/swap/quote",
+  "http402Status": 402,
+  "x402Challenge": {
+    "scheme": "exact",
+    "network": "solana",
+    "maxAmountRequired": "3007",
+    "resource": "https://hermes.swap.io/v1/swap/quote",
+    "description": "Paid swap API (routhex): quote and build unsigned transactions; caller signs and broadcasts",
+    "mimeType": "application/json",
+    "payTo": "BPz2u6eoWLervxEqfpsMCVmKk7h6fEVsd7L5rvEibMfD",
+    "maxTimeoutSeconds": 60,
+    "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "extra": {
+      "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4"
+    }
+  },
+  "guardrailBlockedMalicious25Usd": {
+    "allowed": false,
+    "code": "EXCEEDS_PER_TX_CAP",
+    "reason": "Amount 25000000 exceeds per-transaction cap of 50000",
+    "projectedWindowSpend": "0",
+    "remainingDailyBudget": "1000000"
+  },
+  "guardrailApprovedMicroUsdc": {
+    "allowed": true,
+    "code": "ALLOWED",
+    "priceAtomicUsdc": "3007",
+    "priceUsd": "0.003007"
+  },
+  "recentBlockhash": "BjtXdXyxUH8Y8S8L41G3MGwuC1G9mEWbuZDpG3YrG5i5",
+  "sourceAta": "9SuRGUrgEgm2SnxkeP9FEEVV8ivEv9JUSRV9hTUTaCzq",
+  "destinationAta": "89jtoCobZ3Ako2bUmdcRRDkMGYifySVF89zkRv6PRjKP",
+  "facilitatorResponseStatus": 402,
+  "facilitatorResponseError": "transaction_simulation_failed",
+  "solscanUrl": null,
+  "buildTxStatus": null,
+  "annualComparison": {
+    "sweepsPerYear": 40,
+    "traditionalSaasUsd": 588,
+    "swapIoX402Usd": 0.2406
+  }
+}
